@@ -42,8 +42,23 @@ jobs:
       - name: Make Gradlew Executable
         run: chmod +x gradlew
 
-      - name: Generate Signing Keystore
+      - name: Setup Signing Keystores (Debug & Release)
         run: |
+          # 1. Restore debug.keystore for debugConfig
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          else
+            keytool -genkey -v -keystore debug.keystore \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android \
+              -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+          # 2. Generate release upload keystore for release signingConfig
           keytool -genkey -v -keystore my-upload-key.jks \
             -alias upload \
             -keyalg RSA \
