@@ -1,0 +1,6 @@
+{
+  "name": "WiFi FTP Server",
+  "description": "Fast and private local Wi-Fi FTP server. Share full storage or specific folders and files directly with your PC file explorer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
