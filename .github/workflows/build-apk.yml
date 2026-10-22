@@ -1,38 +1,129 @@
-name: Build Android APK
+name: Build & Release Android APK
 
 on:
   push:
-    branches: [ "main" ] # Change to "master" if your default branch is master
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a GitHub Release with the APKs'
+        type: boolean
+        default: true
+      release_tag:
+        description: 'Release Tag (leave empty for auto-generated tag)'
+        type: string
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
+    name: Build APKs
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: 'gradle'
-          
-      - name: Generate Gradle Wrapper
-        run: gradle wrapper --gradle-version 8.7
 
-      - name: Grant execute permission for gradlew
+      - name: Make Gradlew Executable
         run: chmod +x gradlew
 
-      - name: Generate Debug Keystore
-        run: keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
+      - name: Generate Signing Keystore
+        run: |
+          keytool -genkey -v -keystore my-upload-key.jks \
+            -alias upload \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass android \
+            -keypass android \
+            -dname "CN=WiFiFtpServer, OU=Mobile, O=WiFiFtpServer, L=City, S=State, C=US"
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Build Debug & Release APKs
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: android
+          KEY_PASSWORD: android
+        run: |
+          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Prepare APK Artifacts
+        id: prepare_apks
+        run: |
+          mkdir -p release-apks
+          
+          # Find and copy debug APK
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk release-apks/WiFi-FTP-Server-debug.apk
+          fi
+          
+          # Find and copy release APK
+          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            cp app/build/outputs/apk/release/app-release.apk release-apks/WiFi-FTP-Server-release.apk
+          fi
+          
+          ls -la release-apks/
+
+      - name: Upload APKs as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: my-android-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: WiFi-FTP-Server-APKs
+          path: release-apks/*.apk
+          retention-days: 30
+
+      - name: Determine Release Tag
+        id: tag_info
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          elif [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            TAG_NAME="${{ github.event.inputs.release_tag }}"
+          else
+            TAG_NAME="v1.0.${{ github.run_number }}"
+          fi
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        if: (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true') && github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag_info.outputs.tag_name }}
+          name: "WiFi FTP Server ${{ steps.tag_info.outputs.tag_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            release-apks/WiFi-FTP-Server-release.apk
+            release-apks/WiFi-FTP-Server-debug.apk
+          body: |
+            ## 🚀 WiFi FTP Server for Android
+
+            Install the APK on your Android device (Android 10+) to instantly start a local Wi-Fi FTP file server and transfer files wirelessly with your PC, Mac, or tablet.
+
+            ### 📦 Downloads:
+            - **WiFi-FTP-Server-release.apk**: Production release build.
+            - **WiFi-FTP-Server-debug.apk**: Debug build with logcat outputs enabled.
+
+            ### ✨ Key Features:
+            - **Single-Screen UI**: Clean Material 3 design with light & dark theme toggle.
+            - **Storage Sharing Options**: Share whole internal storage + SD card, a specific folder, or a specific file.
+            - **Hologram 3D Logo & Tech Splash**: Sci-fi animated server core and quick loading screen.
+            - **Security & Authorization**: Pop-up dialog to allow or block connecting devices by IP/hostname.
+            - **On-Screen QR Code & One-Tap Copy**: Scan with your camera or tap once to copy `ftp://<ip>:<port>`.
+            - **Real-Time Speeds**: Live upload & download speed meters and active transferring filename.
+            - **Auto-Shutdown & Wake Lock**: Automatic shutdown when Wi-Fi disconnects; CPU WakeLock held during active file transfers.
