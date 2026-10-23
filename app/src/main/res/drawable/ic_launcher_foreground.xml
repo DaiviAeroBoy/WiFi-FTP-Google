@@ -5,39 +5,30 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Wi-Fi Waves -->
-    <!-- Outer wave -->
+    <!-- Minimal Wi-Fi Arc -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#38BDF8"
-        android:strokeWidth="3.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
         android:strokeLineCap="round"
-        android:pathData="M34,36 C40,30 47,27 54,27 C61,27 68,30 74,36" />
+        android:pathData="M38,40 C43,35 48,33 54,33 C60,33 65,35 70,40" />
 
-    <!-- Middle wave -->
+    <!-- Upload Arrow Shaft -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M51.5,48 L56.5,48 L56.5,68 L51.5,68 Z" />
+
+    <!-- Upload Arrow Head -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,42 L42,54 L46,57.5 L54,49.5 L62,57.5 L66,54 Z" />
+
+    <!-- Minimal Tray / Platform -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#0284C7"
-        android:strokeWidth="3.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
         android:strokeLineCap="round"
-        android:pathData="M40,43 C44,39 49,37 54,37 C59,37 64,39 68,43" />
-
-    <!-- Server / Folder Box -->
-    <path
-        android:fillColor="#1E293B"
-        android:strokeColor="#38BDF8"
-        android:strokeWidth="2.5"
-        android:pathData="M33,52 L45,52 L50,57 L75,57 C77.2,57 79,58.8 79,61 L79,77 C79,79.2 77.2,81 75,81 L33,81 C30.8,81 29,79.2 29,77 L29,56 C29,53.8 30.8,52 33,52 Z" />
-
-    <!-- Up/Down Transfer Arrows on folder -->
-    <!-- Up Arrow (Greenish cyan) -->
-    <path
-        android:fillColor="#00F0FF"
-        android:pathData="M46,73 L46,65 L43,65 L48,59 L53,65 L50,65 L50,73 Z" />
-
-    <!-- Down Arrow (White) -->
-    <path
-        android:fillColor="#F8FAFC"
-        android:pathData="M58,63 L58,71 L55,71 L60,77 L65,71 L62,71 L62,63 Z" />
-
+        android:strokeLineJoin="round"
+        android:pathData="M38,68 L38,75 L70,75 L70,68" />
 </vector>
